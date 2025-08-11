@@ -1,5 +1,5 @@
-"use client";
-import React, { useEffect, useRef, useState } from "react";
+import React from "react";
+import ImageBoard from "./ImageBoard";
 
 // function ClipEffect({ targetRef, sliderX, imgSize }) {
 //   useEffect(() => {
@@ -102,50 +102,6 @@ const SharpenFX = () => {
   //   };
   // }, [worker]);
 
-  // function handleFiles(file) {
-  //   const img = new Image();
-  //   img.onload = () => {
-  //     const w = Math.min(1200, img.width);
-  //     const scale = w / img.width;
-  //     const h = Math.round(img.height * scale);
-  //     setImgSize({ w, h });
-
-  //     const beforeCanvas = beforeCanvasRef.current;
-  //     const afterCanvas = afterCanvasRef.current;
-  //     beforeCanvas.width = w;
-  //     beforeCanvas.height = h;
-  //     afterCanvas.width = w;
-  //     afterCanvas.height = h;
-  //     const bctx = beforeCanvas.getContext("2d");
-  //     bctx.drawImage(img, 0, 0, w, h);
-
-  //     // get image data and send to worker
-  //     const idata = bctx.getImageData(0, 0, w, h);
-  //     if (worker) {
-  //       setProcessing(true);
-  //       // strength between 0.8 ~ 1.4 (user can adjust later)
-  //       worker.postMessage({ id: 1, imageData: idata, strength: 1 }, [idata.data.buffer]);
-  //     }
-
-  //     // init slider position center
-  //     setTimeout(() => {
-  //       setSliderX(Math.round(w / 2));
-  //     }, 0);
-  //   };
-  //   img.src = URL.createObjectURL(file);
-  // }
-
-  // function onDrop(e) {
-  //   e.preventDefault();
-  //   const f = e.dataTransfer.files?.[0];
-  //   if (f) handleFiles(f);
-  // }
-
-  // function onFileChange(e) {
-  //   const f = e.target.files?.[0];
-  //   if (f) handleFiles(f);
-  // }
-
   // function downloadProcessed() {
   //   const canvas = afterCanvasRef.current;
   //   if (!canvas) return;
@@ -195,24 +151,12 @@ const SharpenFX = () => {
         </h1>
 
         <div className="flex gap-4 mb-6 flex-1">
-          <label
-            className="flex-1 border-1 border-gray-300 rounded-lg p-6 text-center hover:border-gray-40 cursor-pointer flex-center "
-            onDragOver={(e) => e.preventDefault()}
-          >
-            {/* <input ref={inputRef} type="file" accept="image/*" className="hidden" onChange={onFileChange} /> */}
-            <div className="flex-col-center gap-2">
-              <p>Drag & Drop or click to select an image</p>
-              <p className="text-xs text-gray-400">
-                Supports JPG / PNG. Large images scaled to width 1200px for
-                performance.
-              </p>
-            </div>
-          </label>
+          <ImageBoard />
 
           <div className="w-48 flex flex-col gap-2">
             <button className="bg-primary-a text-white hover:bg-primary-a/70 btn">
               {/* onClick={() => inputRef.current?.click()} */}
-              Choose File
+              Start Sharpening
             </button>
             <button
               className={`border border-gray-300 hover:border-gray-400 btn`}
