@@ -161,6 +161,27 @@ const ImageBoard = () => {
     );
   };
 
+  const downloadImage = () => {
+    if (!processedCanvasRef.current) {
+      alert("Image Sharpening has not been processed yet.");
+      return;
+    }
+
+    const canvas = processedCanvasRef.current;
+
+    try {
+      const link = document.createElement("a");
+      link.download = `sharpened-FX-${Date.now()}.png`;
+      link.href = canvas.toDataURL("image/png", 1.0);
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    } catch (error) {
+      console.error("Error downloading image:", error);
+      alert("Error downloading image. Please try again.");
+    }
+  };
+
   return (
     <div
       className="flex-1 border border-gray-300 rounded-lg p-6 text-center hover:border-gray-400 cursor-pointer flex flex-col items-center justify-center min-h-[300px]"
@@ -190,7 +211,6 @@ const ImageBoard = () => {
         <div className="w-full flex flex-col items-center gap-4">
           <ImageSlider
             hasImage={hasImage}
-            worker={worker}
             canvasRef={canvasRef}
             processedCanvasRef={processedCanvasRef}
           />
@@ -213,6 +233,13 @@ const ImageBoard = () => {
               className="px-4 py-2 text-sm border border-gray-300 rounded hover:border-gray-100 btn"
             >
               Reset
+            </button>
+            <button
+              disabled={!processedCanvasRef.current}
+              onClick={downloadImage}
+              className="px-4 py-2 text-sm border border-gray-300 rounded hover:border-gray-100 btn"
+            >
+              Download
             </button>
           </div>
         </div>

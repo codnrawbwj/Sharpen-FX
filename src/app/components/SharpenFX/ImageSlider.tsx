@@ -2,12 +2,10 @@ import { useEffect, useRef, useState } from "react";
 
 const ImageSlider = ({
   hasImage,
-  worker,
   canvasRef,
   processedCanvasRef,
 }: {
   hasImage: boolean;
-  worker: Worker | null;
   canvasRef: React.RefObject<HTMLCanvasElement | null>;
   processedCanvasRef: React.RefObject<HTMLCanvasElement | null>;
 }) => {
@@ -74,7 +72,6 @@ const ImageSlider = ({
     setSliderPosition(position);
   };
 
-  console.log("ImageSlider render:", { hasImage, worker, sliderPosition });
   if (!hasImage) return null;
 
   return (
@@ -122,20 +119,6 @@ const ImageSlider = ({
           Before
         </div>
       </div>
-      {/* 
-      <div className="mt-2 flex items-center gap-4">
-        <span className="text-xs text-gray-400">Before</span>
-        <input
-          type="range"
-          min="0"
-          max="1"
-          step="0.01"
-          value={sliderPosition}
-          onChange={(e) => setSliderPosition(parseFloat(e.target.value))}
-          className="flex-1 h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer slider"
-        />
-        <span className="text-xs text-gray-400">After</span>
-      </div> */}
     </div>
   );
 };
