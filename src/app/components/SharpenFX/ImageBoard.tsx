@@ -5,6 +5,7 @@ import ImageContorlPanel from "@/app/components/SharpenFX/ImageContorlPanel";
 import ImageSlider from "@/app/components/SharpenFX/ImageSlider";
 import { ImageSize } from "@/app/types/types";
 import { ERROR_MESSAGES, IMAGE_CONSTRAINTS } from "@/app/utils/constants";
+import { handleError } from "@/app/utils/errorHandler";
 import { resizeImage } from "@/app/utils/imageUtils";
 import { createImageWorker, ImageWorker } from "@/app/webWorkers/ImageWorker";
 import { useEffect, useRef, useState } from "react";
@@ -28,31 +29,84 @@ const ImageBoard = () => {
   const [processing, setProcessing] = useState<boolean>(false);
 
   const cleanupPrevImage = () => {
-    if (imageUrl) {
-      URL.revokeObjectURL(imageUrl);
-      setImageUrl(null);
-    }
-    if (currentImg) {
-      currentImg.src = "";
-      setCurrentImg(null);
+    try {
+      if (imageUrl) {
+        URL.revokeObjectURL(imageUrl);
+        setImageUrl(null);
+      }
+      if (currentImg) {
+        currentImg.src = "";
+        setCurrentImg(null);
+      }
+    } catch (error) {
+      handleError(error as Error, "cleanup");
     }
   };
 
   const handleFiles = (file: File) => {
-    cleanupPrevImage();
+    try {
+      if (!file.type.startsWith("image/")) {
+        throw new Error(ERROR_MESSAGES.FILE_TYPE_INVALID);
+      }
 
-    const img = new Image();
-    img.onload = () => {
-      const { w, h } = resizeImage(img, IMAGE_CONSTRAINTS.MAX_WIDTH);
+      cleanupPrevImage();
 
-      setImgSize({ w, h });
-      setHasImage(true);
-      setCurrentImg(img);
-    };
+      const img = new Image();
 
-    const newUrl = URL.createObjectURL(file);
-    setImageUrl(newUrl);
-    img.src = newUrl;
+      img.onerror = () => {
+        handleError(
+          new Error(ERROR_MESSAGES.IMAGE_LOADING_ERROR),
+          "image loading"
+        );
+      };
+
+      img.onload = () => {
+        try {
+          const { w, h } = resizeImage(img, IMAGE_CONSTRAINTS.MAX_WIDTH);
+
+          setImgSize({ w, h });
+          setHasImage(true);
+          setCurrentImg(img);
+        } catch (error) {
+          handleError(error as Error, "image resizing");
+        }
+      };
+
+      const newUrl = URL.createObjectURL(file);
+      setImageUrl(newUrl);
+      img.src = newUrl;
+    } catch (error) {
+      handleError(error as Error, "file handling");
+    }
+  };
+
+  const processImage = () => {
+    try {
+      if (!worker || !currentImg || !canvasRef.current) {
+        throw new Error(ERROR_MESSAGES.RESOURCES_UNAVAILABLE);
+      }
+
+      setProcessing(true);
+
+      const canvas = canvasRef.current;
+      const ctx = canvas.getContext("2d");
+      if (!ctx) {
+        throw new Error(ERROR_MESSAGES.CANVAS_CONTEXT_FAILED);
+      }
+
+      const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+
+      worker.postMessage(
+        {
+          imageData,
+          strength: 1.0,
+        },
+        [imageData.data.buffer]
+      );
+    } catch (error) {
+      setProcessing(false);
+      handleError(error as Error, "image processing");
+    }
   };
 
   useEffect(() => {
@@ -110,26 +164,6 @@ const ImageBoard = () => {
       w.cleanup();
     };
   }, [processedCanvasRef]);
-
-  const processImage = () => {
-    if (!worker || !currentImg || !canvasRef.current) return;
-
-    setProcessing(true);
-
-    const canvas = canvasRef.current;
-    const ctx = canvas.getContext("2d");
-    if (!ctx) return;
-
-    const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-
-    worker.postMessage(
-      {
-        imageData,
-        strength: 1.0,
-      },
-      [imageData.data.buffer]
-    );
-  };
 
   return (
     <div className="flex-1 flex flex-col items-center justify-center min-h-[300px]">
