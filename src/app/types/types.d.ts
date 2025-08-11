@@ -25,7 +25,11 @@ export interface FileUploadProps {
 export interface ImageControlsProps {
   processing: boolean;
   hasProcessedImage: boolean;
+  cleanupPrevImage: () => void;
+  setHasImage: (hasImage: boolean) => void;
+  setImgSize: (imgSize: ImageSize) => void;
+  inputRef: React.RefObject<HTMLInputElement | null>;
+  canvasRef: React.RefObject<HTMLCanvasElement | null>;
+  processedCanvasRef: React.RefObject<HTMLCanvasElement | null>;
   onProcess: () => void;
-  onReset: () => void;
-  onDownload: () => void;
 }
