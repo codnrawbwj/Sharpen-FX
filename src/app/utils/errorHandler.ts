@@ -3,11 +3,11 @@ import { ERROR_MESSAGES } from "@/app/utils/constants";
 export const handleError = (error: Error, context: string) => {
   console.error(`Error in ${context}:`, error);
 
-  const userMessage = getErrorMessage(error, context);
+  const userMessage = getErrorMessage(context);
   alert(userMessage);
 };
 
-const getErrorMessage = (error: Error, context: string): string => {
+const getErrorMessage = (context: string): string => {
   switch (context) {
     case "file handling":
       return ERROR_MESSAGES.FILE_TYPE_INVALID;
