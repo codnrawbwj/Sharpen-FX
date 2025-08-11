@@ -1,5 +1,6 @@
 "use client";
 
+import { createImageWorker, ImageWorker } from "@/app/webWorkers/ImageWorker";
 import { useEffect, useRef, useState } from "react";
 
 const ImageBoard = () => {
@@ -7,9 +8,14 @@ const ImageBoard = () => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [imgSize, setImgSize] = useState({ w: 0, h: 0 });
   const [hasImage, setHasImage] = useState<boolean>(false);
-
   const [imageUrl, setImageUrl] = useState<string | null>(null);
   const [currentImg, setCurrentImg] = useState<HTMLImageElement | null>(null);
+
+  const [worker, setWorker] = useState<ReturnType<
+    typeof createImageWorker
+  > | null>(null);
+  const [processing, setProcessing] = useState<boolean>(false);
+  const processedCanvasRef = useRef<HTMLCanvasElement>(null);
 
   const cleanupPrevImage = () => {
     if (imageUrl) {
@@ -70,6 +76,12 @@ const ImageBoard = () => {
       const ctx = canvas.getContext("2d");
       ctx?.clearRect(0, 0, canvas.width, canvas.height);
     }
+
+    const processedCanvas = processedCanvasRef.current;
+    if (processedCanvas) {
+      const ctx = processedCanvas.getContext("2d");
+      ctx?.clearRect(0, 0, processedCanvas.width, processedCanvas.height);
+    }
   };
 
   useEffect(() => {
@@ -95,6 +107,58 @@ const ImageBoard = () => {
       }
     }
   }, [hasImage, currentImg, imgSize.w, imgSize.h]);
+
+  useEffect(() => {
+    const w: ImageWorker = createImageWorker() as ImageWorker;
+
+    w.onmessage = (e) => {
+      const { imageData } = e.data;
+
+      const canvas = processedCanvasRef.current;
+      if (!canvas) return;
+
+      canvas.width = imageData.width;
+      canvas.height = imageData.height;
+      const ctx = canvas.getContext("2d");
+
+      if (ctx) {
+        const id = new ImageData(
+          new Uint8ClampedArray(imageData.data),
+          imageData.width,
+          imageData.height
+        );
+        ctx.putImageData(id, 0, 0);
+        setProcessing(false);
+      }
+    };
+
+    setWorker(w);
+
+    return () => {
+      w.terminate();
+      w.cleanup();
+    };
+  }, [processedCanvasRef]);
+
+  const processImage = () => {
+    if (!worker || !currentImg || !canvasRef.current) return;
+
+    setProcessing(true);
+
+    const canvas = canvasRef.current;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
+
+    const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+
+    worker.postMessage(
+      {
+        imageData,
+        strength: 1.0,
+      },
+      [imageData.data.buffer]
+    );
+  };
 
   return (
     <div
@@ -123,17 +187,50 @@ const ImageBoard = () => {
         </div>
       ) : (
         <div className="w-full flex flex-col items-center gap-4">
-          <canvas
-            ref={canvasRef}
-            className="rounded shadow-sm"
-            style={{ maxWidth: "100%", height: "auto" }}
-          />
-          <button
-            onClick={resetImage}
-            className="px-4 py-2 text-s border border-gray-300 rounded hover:border-gray-400 btn"
-          >
-            Reset
-          </button>
+          <div className="flex gap-4 w-full">
+            <div className="flex-1">
+              <h3 className="text-sm font-medium text-gray-100 mb-2">
+                Original
+              </h3>
+              <canvas
+                ref={canvasRef}
+                className="border border-gray-200 rounded shadow-sm w-full"
+                style={{ maxWidth: "100%", height: "auto" }}
+              />
+            </div>
+
+            <div className="flex-1">
+              <h3 className="text-sm font-medium text-gray-100 mb-2">
+                Processed
+              </h3>
+              <canvas
+                ref={processedCanvasRef}
+                className="border border-gray-200 rounded shadow-sm w-full"
+                style={{ maxWidth: "100%", height: "auto" }}
+              />
+            </div>
+          </div>
+
+          <div className="flex gap-2">
+            <button
+              onClick={processImage}
+              disabled={processing}
+              className={`px-4 py-2 text-sm rounded border btn ${
+                processing
+                  ? "opacity-50 cursor-not-allowed bg-gray-100"
+                  : "bg-primary-a text-white hover:bg-primary-a/80"
+              }`}
+            >
+              {processing ? "Processing..." : "Sharpen Image"}
+            </button>
+
+            <button
+              onClick={resetImage}
+              className="px-4 py-2 text-sm border border-gray-300 rounded hover:border-gray-100 btn"
+            >
+              Reset
+            </button>
+          </div>
         </div>
       )}
     </div>
