@@ -1,4 +1,5 @@
 import { FileUploadProps } from "@/app/types/types";
+import { IMAGE_CONSTRAINTS } from "@/app/utils/constants";
 
 const FileUpload = ({ handleFiles, inputRef }: FileUploadProps) => {
   const handleClick = () => {
@@ -26,7 +27,7 @@ const FileUpload = ({ handleFiles, inputRef }: FileUploadProps) => {
       <input
         ref={inputRef}
         type="file"
-        accept=".jpg,.jpeg,.png"
+        accept={IMAGE_CONSTRAINTS.SUPPORTED_FORMATS.join(",")}
         className="hidden"
         onChange={onFileChange}
       />

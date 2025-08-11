@@ -3,6 +3,7 @@
 import FileUpload from "@/app/components/SharpenFX/FileUpload";
 import ImageSlider from "@/app/components/SharpenFX/ImageSlider";
 import { ImageSize } from "@/app/types/types";
+import { ERROR_MESSAGES, IMAGE_CONSTRAINTS } from "@/app/utils/constants";
 import { createImageWorker, ImageWorker } from "@/app/webWorkers/ImageWorker";
 import { useEffect, useRef, useState } from "react";
 
@@ -40,7 +41,7 @@ const ImageBoard = () => {
 
     const img = new Image();
     img.onload = () => {
-      const w = Math.min(1200, img.width);
+      const w = Math.min(IMAGE_CONSTRAINTS.MAX_WIDTH, img.width);
       const scale = w / img.width;
       const h = Math.round(img.height * scale);
 
@@ -87,7 +88,7 @@ const ImageBoard = () => {
     if (hasImage && currentImg && imgSize.w > 0 && imgSize.h > 0) {
       const canvas = canvasRef.current;
       if (!canvas) {
-        console.error("Canvas not found in useEffect");
+        console.error(ERROR_MESSAGES.CANVAS_NOT_FOUND);
         return;
       }
 
@@ -154,7 +155,7 @@ const ImageBoard = () => {
 
   const downloadImage = () => {
     if (!processedCanvasRef.current) {
-      alert("Image Sharpening has not been processed yet.");
+      alert(ERROR_MESSAGES.DOWNLOAD_NOT_PROCESSED);
       return;
     }
 
@@ -168,8 +169,8 @@ const ImageBoard = () => {
       link.click();
       document.body.removeChild(link);
     } catch (error) {
-      console.error("Error downloading image:", error);
-      alert("Error downloading image. Please try again.");
+      console.error(ERROR_MESSAGES.DOWNLOAD_ERROR, error);
+      alert(ERROR_MESSAGES.DOWNLOAD_ERROR);
     }
   };
 
