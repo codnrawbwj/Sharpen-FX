@@ -1,5 +1,6 @@
 "use client";
 
+import ImageSlider from "@/app/components/SharpenFX/ImageSlider";
 import { createImageWorker, ImageWorker } from "@/app/webWorkers/ImageWorker";
 import { useEffect, useRef, useState } from "react";
 
@@ -187,29 +188,12 @@ const ImageBoard = () => {
         </div>
       ) : (
         <div className="w-full flex flex-col items-center gap-4">
-          <div className="flex gap-4 w-full">
-            <div className="flex-1">
-              <h3 className="text-sm font-medium text-gray-100 mb-2">
-                Original
-              </h3>
-              <canvas
-                ref={canvasRef}
-                className="border border-gray-200 rounded shadow-sm w-full"
-                style={{ maxWidth: "100%", height: "auto" }}
-              />
-            </div>
-
-            <div className="flex-1">
-              <h3 className="text-sm font-medium text-gray-100 mb-2">
-                Processed
-              </h3>
-              <canvas
-                ref={processedCanvasRef}
-                className="border border-gray-200 rounded shadow-sm w-full"
-                style={{ maxWidth: "100%", height: "auto" }}
-              />
-            </div>
-          </div>
+          <ImageSlider
+            hasImage={hasImage}
+            worker={worker}
+            canvasRef={canvasRef}
+            processedCanvasRef={processedCanvasRef}
+          />
 
           <div className="flex gap-2">
             <button
