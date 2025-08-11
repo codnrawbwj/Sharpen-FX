@@ -1,22 +1,28 @@
 "use client";
 
+import FileUpload from "@/app/components/SharpenFX/FileUpload";
 import ImageSlider from "@/app/components/SharpenFX/ImageSlider";
+import { ImageSize } from "@/app/types/types";
 import { createImageWorker, ImageWorker } from "@/app/webWorkers/ImageWorker";
 import { useEffect, useRef, useState } from "react";
 
 const ImageBoard = () => {
+  // Input Ref
   const inputRef = useRef<HTMLInputElement>(null);
+
+  // Canvas Refs
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const [imgSize, setImgSize] = useState({ w: 0, h: 0 });
+  const processedCanvasRef = useRef<HTMLCanvasElement>(null);
+
+  // Image states
+  const [imgSize, setImgSize] = useState<ImageSize>({ w: 0, h: 0 });
   const [hasImage, setHasImage] = useState<boolean>(false);
   const [imageUrl, setImageUrl] = useState<string | null>(null);
   const [currentImg, setCurrentImg] = useState<HTMLImageElement | null>(null);
 
-  const [worker, setWorker] = useState<ReturnType<
-    typeof createImageWorker
-  > | null>(null);
+  // Worker states
+  const [worker, setWorker] = useState<ImageWorker | null>(null);
   const [processing, setProcessing] = useState<boolean>(false);
-  const processedCanvasRef = useRef<HTMLCanvasElement>(null);
 
   const cleanupPrevImage = () => {
     if (imageUrl) {
@@ -46,21 +52,6 @@ const ImageBoard = () => {
     const newUrl = URL.createObjectURL(file);
     setImageUrl(newUrl);
     img.src = newUrl;
-  };
-
-  const handleClick = () => {
-    inputRef.current?.click();
-  };
-
-  const onDrop = (e: React.DragEvent<HTMLDivElement>) => {
-    e.preventDefault();
-    const f = e.dataTransfer.files?.[0];
-    if (f) handleFiles(f);
-  };
-
-  const onFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const f = e.target.files?.[0];
-    if (f) handleFiles(f);
   };
 
   const resetImage = () => {
@@ -183,30 +174,9 @@ const ImageBoard = () => {
   };
 
   return (
-    <div
-      className="flex-1 border border-gray-300 rounded-lg p-6 text-center hover:border-gray-400 cursor-pointer flex flex-col items-center justify-center min-h-[300px]"
-      onDrop={onDrop}
-      onDragOver={(e) => e.preventDefault()}
-      onDragEnter={(e) => e.preventDefault()}
-    >
-      <input
-        ref={inputRef}
-        type="file"
-        accept=".jpg,.jpeg,.png"
-        className="hidden"
-        onChange={onFileChange}
-      />
-
+    <div className="flex-1 flex flex-col items-center justify-center min-h-[300px]">
       {!hasImage ? (
-        <div className="flex flex-col items-center gap-2" onClick={handleClick}>
-          <p className="text-gray-700">
-            Drag & Drop or click to select an image
-          </p>
-          <p className="text-xs text-gray-400">
-            Supports JPG / PNG. Large images scaled to width 1200px for
-            performance.
-          </p>
-        </div>
+        <FileUpload handleFiles={handleFiles} inputRef={inputRef} />
       ) : (
         <div className="w-full flex flex-col items-center gap-4">
           <ImageSlider
@@ -234,6 +204,7 @@ const ImageBoard = () => {
             >
               Reset
             </button>
+
             <button
               disabled={!processedCanvasRef.current}
               onClick={downloadImage}
