@@ -4,6 +4,7 @@ import FileUpload from "@/app/components/SharpenFX/FileUpload";
 import ImageSlider from "@/app/components/SharpenFX/ImageSlider";
 import { ImageSize } from "@/app/types/types";
 import { ERROR_MESSAGES, IMAGE_CONSTRAINTS } from "@/app/utils/constants";
+import { downloadCanvas, resizeImage } from "@/app/utils/imageUtils";
 import { createImageWorker, ImageWorker } from "@/app/webWorkers/ImageWorker";
 import { useEffect, useRef, useState } from "react";
 
@@ -41,9 +42,7 @@ const ImageBoard = () => {
 
     const img = new Image();
     img.onload = () => {
-      const w = Math.min(IMAGE_CONSTRAINTS.MAX_WIDTH, img.width);
-      const scale = w / img.width;
-      const h = Math.round(img.height * scale);
+      const { w, h } = resizeImage(img, IMAGE_CONSTRAINTS.MAX_WIDTH);
 
       setImgSize({ w, h });
       setHasImage(true);
@@ -162,12 +161,7 @@ const ImageBoard = () => {
     const canvas = processedCanvasRef.current;
 
     try {
-      const link = document.createElement("a");
-      link.download = `sharpened-FX-${Date.now()}.png`;
-      link.href = canvas.toDataURL("image/png", 1.0);
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
+      downloadCanvas(canvas, `sharpened-FX-${Date.now()}.png`);
     } catch (error) {
       console.error(ERROR_MESSAGES.DOWNLOAD_ERROR, error);
       alert(ERROR_MESSAGES.DOWNLOAD_ERROR);
