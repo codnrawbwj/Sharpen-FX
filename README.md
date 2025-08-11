@@ -2,7 +2,7 @@
 
 A real-time image sharpening application built with Next.js, Canvas API, and Web Workers for enhanced performance.
 
-## �� Features
+## Features
 
 - **Real-time Image Processing**: Upload and process images instantly with customizable sharpening strength
 - **Before/After Comparison**: Interactive slider to compare original and processed images
