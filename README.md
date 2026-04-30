@@ -1,8 +1,10 @@
 # Sharpen-FX
 
+https://sharpen-fx.vercel.app/
+
 A real-time image sharpening application built with Next.js, Canvas API, and Web Workers for enhanced performance.
 
-## �� Features
+## Features
 
 - **Real-time Image Processing**: Upload and process images instantly with customizable sharpening strength
 - **Before/After Comparison**: Interactive slider to compare original and processed images
@@ -128,5 +130,3 @@ npm run dev
 npm run build
 npm start
 ```
-
-## 📁 Project Structure
