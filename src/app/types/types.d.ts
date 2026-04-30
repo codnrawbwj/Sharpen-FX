@@ -32,4 +32,9 @@ export interface ImageControlsProps {
   canvasRef: React.RefObject<HTMLCanvasElement | null>;
   processedCanvasRef: React.RefObject<HTMLCanvasElement | null>;
   onProcess: () => void;
+  strength: number;
+  onStrengthChange: (strength: number) => void;
+  useGPU: boolean;
+  onToggleGPU: () => void;
+  gpuSupported: boolean;
 }
