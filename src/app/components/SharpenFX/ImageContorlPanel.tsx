@@ -1,86 +1,89 @@
 import { ImageControlsProps } from "@/app/types/types";
-import { ERROR_MESSAGES } from "@/app/utils/constants";
-import { downloadCanvas } from "@/app/utils/imageUtils";
 
 const ImageContorlPanel = ({
+  hasImage,
   processing,
-  hasProcessedImage,
-  cleanupPrevImage,
-  setHasImage,
-  setImgSize,
-  inputRef,
-  canvasRef,
-  processedCanvasRef,
+  isProcessed,
   onProcess,
+  onReset,
+  onDownload,
   strength,
   onStrengthChange,
   useGPU,
   onToggleGPU,
   gpuSupported,
 }: ImageControlsProps) => {
-  const resetImage = () => {
-    cleanupPrevImage();
-    setHasImage(false);
-    setImgSize({ w: 0, h: 0 });
-
-    if (inputRef.current) {
-      inputRef.current.value = "";
-    }
-
-    const canvas = canvasRef.current;
-    if (canvas) {
-      const ctx = canvas.getContext("2d");
-      ctx?.clearRect(0, 0, canvas.width, canvas.height);
-    }
-
-    const processedCanvas = processedCanvasRef.current;
-    if (processedCanvas) {
-      const ctx = processedCanvas.getContext("2d");
-      ctx?.clearRect(0, 0, processedCanvas.width, processedCanvas.height);
-    }
-  };
-
-  const downloadImage = () => {
-    if (!processedCanvasRef.current) {
-      alert(ERROR_MESSAGES.DOWNLOAD_NOT_PROCESSED);
-      return;
-    }
-
-    const canvas = processedCanvasRef.current;
-
-    try {
-      downloadCanvas(canvas, `sharpened-FX-${Date.now()}.png`);
-    } catch (error) {
-      console.error(ERROR_MESSAGES.DOWNLOAD_ERROR, error);
-      alert(ERROR_MESSAGES.DOWNLOAD_ERROR);
-    }
-  };
-
   return (
-    <div className="flex flex-col gap-3 w-full">
-      <div className="flex items-center gap-3">
-        <label className="text-sm text-gray-400 w-16">Strength</label>
+    <div className="flex flex-col gap-6">
+
+      {/* Engine toggle */}
+      <div className="flex flex-col gap-2">
+        <span className="text-xs font-medium text-gray-500 uppercase tracking-widest">Engine</span>
+        <div className="flex rounded-lg overflow-hidden border border-white/10">
+          <button
+            onClick={() => !useGPU && onToggleGPU()}
+            disabled={!gpuSupported || processing}
+            className={`flex-1 py-2 text-xs font-medium transition-colors duration-150 ${
+              useGPU
+                ? "bg-primary-a text-white"
+                : "text-gray-400 hover:text-gray-200 hover:bg-white/5"
+            } disabled:opacity-40 disabled:cursor-not-allowed`}
+          >
+            GPU
+          </button>
+          <div className="w-px bg-white/10" />
+          <button
+            onClick={() => useGPU && onToggleGPU()}
+            disabled={processing}
+            className={`flex-1 py-2 text-xs font-medium transition-colors duration-150 ${
+              !useGPU
+                ? "bg-primary-a text-white"
+                : "text-gray-400 hover:text-gray-200 hover:bg-white/5"
+            } disabled:opacity-40 disabled:cursor-not-allowed`}
+          >
+            CPU
+          </button>
+        </div>
+        <p className="text-xs text-gray-600">
+          {useGPU ? "Real-time · shader-based" : "Manual · web worker"}
+        </p>
+      </div>
+
+      {/* Strength */}
+      <div className="flex flex-col gap-2">
+        <div className="flex items-center justify-between">
+          <span className="text-xs font-medium text-gray-500 uppercase tracking-widest">Strength</span>
+          <span className="text-xs font-mono text-gray-300">{strength.toFixed(2)}</span>
+        </div>
         <input
           type="range"
           min={0}
           max={2}
           step={0.01}
           value={strength}
+          disabled={!hasImage}
           onChange={(e) => onStrengthChange(parseFloat(e.target.value))}
-          className="flex-1"
+          className="w-full disabled:opacity-30"
         />
-        <span className="text-sm text-gray-400 w-8 text-right">{strength.toFixed(1)}</span>
+        <div className="flex justify-between text-xs text-gray-600">
+          <span>0</span>
+          <span>2</span>
+        </div>
       </div>
 
-      <div className="flex gap-2">
+      {/* Actions */}
+      <div className="flex flex-col gap-2">
+        <span className="text-xs font-medium text-gray-500 uppercase tracking-widest">Actions</span>
+
+        {/* Sharpen button — CPU only */}
         {!useGPU && (
           <button
             onClick={onProcess}
-            disabled={processing}
-            className={`px-4 py-2 text-sm rounded border btn ${
-              processing
-                ? "opacity-50 cursor-not-allowed bg-gray-100"
-                : "bg-primary-a text-white hover:bg-primary-a/80"
+            disabled={processing || !hasImage}
+            className={`w-full py-2.5 rounded-lg text-sm font-medium transition-all duration-150 ${
+              processing || !hasImage
+                ? "bg-primary-a/30 text-white/40 cursor-not-allowed"
+                : "bg-primary-a text-white hover:bg-primary-a/80 active:scale-95"
             }`}
           >
             {processing ? "Processing..." : "Sharpen Image"}
@@ -88,34 +91,28 @@ const ImageContorlPanel = ({
         )}
 
         <button
-          onClick={resetImage}
-          className="px-4 py-2 text-sm border border-gray-300 rounded hover:border-gray-100 btn"
-        >
-          Reset
-        </button>
-
-        <button
-          disabled={!hasProcessedImage}
-          onClick={downloadImage}
-          className="px-4 py-2 text-sm border border-gray-300 rounded hover:border-gray-100 btn"
+          onClick={onDownload}
+          disabled={!isProcessed}
+          className="w-full py-2.5 rounded-lg text-sm font-medium border border-white/10 text-gray-300 transition-all duration-150 hover:bg-white/5 hover:border-white/20 active:scale-95 disabled:opacity-30 disabled:cursor-not-allowed"
         >
           Download
         </button>
 
         <button
-          onClick={onToggleGPU}
-          disabled={processing || !gpuSupported}
-          className={`px-4 py-2 text-sm rounded border btn ${
-            !gpuSupported
-              ? "opacity-40 cursor-not-allowed border-gray-300"
-              : useGPU
-              ? "border-green-500 text-green-500 hover:bg-green-500/10"
-              : "border-gray-300 text-gray-400 hover:border-gray-100"
-          }`}
+          onClick={onReset}
+          disabled={!hasImage}
+          className="w-full py-2.5 rounded-lg text-sm font-medium border border-white/10 text-gray-400 transition-all duration-150 hover:bg-white/5 hover:border-white/20 active:scale-95 disabled:opacity-30 disabled:cursor-not-allowed"
         >
-          {useGPU ? "GPU" : "CPU"}
+          Reset
         </button>
       </div>
+
+      {/* Empty state hint */}
+      {!hasImage && (
+        <p className="text-xs text-gray-600 text-center mt-2">
+          Upload an image to get started
+        </p>
+      )}
     </div>
   );
 };

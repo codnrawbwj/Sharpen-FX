@@ -12,7 +12,7 @@ const ImageSlider = ({
   hiddenCanvasRef: React.RefObject<HTMLCanvasElement | null>;
 }) => {
   const [sliderPosition, setSliderPosition] = useState<number>(0.5);
-  const [isDragging, setIsDragging] = useState<boolean>(false);
+  const isDragging = useRef<boolean>(false);
   const sliderContainerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -20,41 +20,39 @@ const ImageSlider = ({
     if (!container) return;
 
     const handleMouseDown = (e: MouseEvent) => {
-      setIsDragging(true);
+      isDragging.current = true;
       updateSliderPosition(e.clientX, container);
     };
 
     const handleMouseMove = (e: MouseEvent) => {
-      if (!isDragging) return;
+      if (!isDragging.current) return;
       updateSliderPosition(e.clientX, container);
     };
 
     const handleMouseUp = () => {
-      setIsDragging(false);
+      isDragging.current = false;
     };
 
     const handleTouchStart = (e: TouchEvent) => {
-      setIsDragging(true);
+      isDragging.current = true;
       updateSliderPosition(e.touches[0].clientX, container);
     };
 
     const handleTouchMove = (e: TouchEvent) => {
-      if (!isDragging) return;
+      if (!isDragging.current) return;
       e.preventDefault();
       updateSliderPosition(e.touches[0].clientX, container);
     };
 
     const handleTouchEnd = () => {
-      setIsDragging(false);
+      isDragging.current = false;
     };
 
     container.addEventListener("mousedown", handleMouseDown);
     document.addEventListener("mousemove", handleMouseMove);
     document.addEventListener("mouseup", handleMouseUp);
     container.addEventListener("touchstart", handleTouchStart);
-    container.addEventListener("touchmove", handleTouchMove, {
-      passive: false,
-    });
+    container.addEventListener("touchmove", handleTouchMove, { passive: false });
     container.addEventListener("touchend", handleTouchEnd);
 
     return () => {
@@ -65,7 +63,7 @@ const ImageSlider = ({
       container.removeEventListener("touchmove", handleTouchMove);
       container.removeEventListener("touchend", handleTouchEnd);
     };
-  }, [isDragging]);
+  }, []);
 
   const updateSliderPosition = (clientX: number, container: HTMLElement) => {
     const rect = container.getBoundingClientRect();
@@ -75,52 +73,54 @@ const ImageSlider = ({
   };
 
   return (
-    <div className={`w-full ${!hasImage ? "hidden" : ""}`}>
-      <h3 className="text-sm font-medium text-gray-100 mb-2 text-center">
-        Before / After Comparison
-      </h3>
-
+    <div className={`absolute inset-0 ${!hasImage ? "hidden" : ""}`}>
       <div
         ref={sliderContainerRef}
-        className="relative w-full h-[600px] bg-gray-900 rounded-lg overflow-hidden cursor-ew-resize"
+        className="relative w-full h-full bg-[#0a0a0a] cursor-ew-resize overflow-hidden"
       >
+        {/* Before (original) */}
         <canvas
           ref={canvasRef}
           className="absolute inset-0 w-full h-full object-contain"
-          style={{ maxWidth: "100%", height: "auto", display: "block" }}
+          style={{ display: "block" }}
         />
 
+        {/* After (processed) — clipped to reveal from left */}
         <div
           className="absolute inset-0 overflow-hidden"
-          style={{
-            clipPath: `inset(0 ${(1 - sliderPosition) * 100}% 0 0)`,
-          }}
+          style={{ clipPath: `inset(0 ${(1 - sliderPosition) * 100}% 0 0)` }}
         >
           <canvas
             ref={afterCanvasRef}
             className="w-full h-full object-contain"
-            style={{ maxWidth: "100%", height: "auto", display: "block" }}
+            style={{ display: "block" }}
           />
         </div>
 
-        {/* Always in the DOM so the inactive pipeline's ref remains valid */}
-        <canvas ref={hiddenCanvasRef} className="hidden" />
-
+        {/* Divider line */}
         <div
-          className="absolute top-0 bottom-0 w-1 bg-white shadow-lg cursor-ew-resize"
+          className="absolute top-0 bottom-0 w-px bg-white/70 shadow-[0_0_8px_rgba(255,255,255,0.5)]"
           style={{ left: `${sliderPosition * 100}%` }}
         >
-          <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-6 h-6 bg-white rounded-full shadow-lg border-2 border-gray-300 flex items-center justify-center">
-            <div className="w-1 h-3 bg-gray-400 rounded-full"></div>
+          {/* Handle */}
+          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-white shadow-xl flex items-center justify-center">
+            <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+              <path d="M4 7H1M1 7L3 5M1 7L3 9" stroke="#555" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+              <path d="M10 7H13M13 7L11 5M13 7L11 9" stroke="#555" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+            </svg>
           </div>
         </div>
 
-        <div className="absolute bottom-2 left-2 text-xs text-white bg-black/50 px-2 py-1 rounded">
-          After
-        </div>
-        <div className="absolute bottom-2 right-2 text-xs text-white bg-black/50 px-2 py-1 rounded">
+        {/* Labels */}
+        <div className="absolute bottom-4 left-4 text-xs text-white/70 bg-black/50 px-2 py-1 rounded-md backdrop-blur-sm pointer-events-none">
           Before
         </div>
+        <div className="absolute bottom-4 right-4 text-xs text-white/70 bg-black/50 px-2 py-1 rounded-md backdrop-blur-sm pointer-events-none">
+          After
+        </div>
+
+        {/* Always in DOM so the inactive pipeline's ref remains valid */}
+        <canvas ref={hiddenCanvasRef} className="hidden" />
       </div>
     </div>
   );
