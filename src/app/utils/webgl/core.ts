@@ -105,6 +105,10 @@ export const uploadTexture = (
 
   gl.bindTexture(gl.TEXTURE_2D, texture);
 
+  // Flip Y so the image isn't upside down — WebGL's origin is bottom-left,
+  // but images are stored top-left.
+  gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true);
+
   // Upload the image pixels to the GPU
   gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, image);
 
