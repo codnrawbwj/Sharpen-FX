@@ -12,6 +12,11 @@ const ImageContorlPanel = ({
   canvasRef,
   processedCanvasRef,
   onProcess,
+  strength,
+  onStrengthChange,
+  useGPU,
+  onToggleGPU,
+  gpuSupported,
 }: ImageControlsProps) => {
   const resetImage = () => {
     cleanupPrevImage();
@@ -52,33 +57,65 @@ const ImageContorlPanel = ({
   };
 
   return (
-    <div className="flex gap-2">
-      <button
-        onClick={onProcess}
-        disabled={processing}
-        className={`px-4 py-2 text-sm rounded border btn ${
-          processing
-            ? "opacity-50 cursor-not-allowed bg-gray-100"
-            : "bg-primary-a text-white hover:bg-primary-a/80"
-        }`}
-      >
-        {processing ? "Processing..." : "Sharpen Image"}
-      </button>
+    <div className="flex flex-col gap-3 w-full">
+      <div className="flex items-center gap-3">
+        <label className="text-sm text-gray-400 w-16">Strength</label>
+        <input
+          type="range"
+          min={0}
+          max={2}
+          step={0.01}
+          value={strength}
+          onChange={(e) => onStrengthChange(parseFloat(e.target.value))}
+          className="flex-1"
+        />
+        <span className="text-sm text-gray-400 w-8 text-right">{strength.toFixed(1)}</span>
+      </div>
 
-      <button
-        onClick={resetImage}
-        className="px-4 py-2 text-sm border border-gray-300 rounded hover:border-gray-100 btn"
-      >
-        Reset
-      </button>
+      <div className="flex gap-2">
+        {!useGPU && (
+          <button
+            onClick={onProcess}
+            disabled={processing}
+            className={`px-4 py-2 text-sm rounded border btn ${
+              processing
+                ? "opacity-50 cursor-not-allowed bg-gray-100"
+                : "bg-primary-a text-white hover:bg-primary-a/80"
+            }`}
+          >
+            {processing ? "Processing..." : "Sharpen Image"}
+          </button>
+        )}
 
-      <button
-        disabled={!hasProcessedImage}
-        onClick={downloadImage}
-        className="px-4 py-2 text-sm border border-gray-300 rounded hover:border-gray-100 btn"
-      >
-        Download
-      </button>
+        <button
+          onClick={resetImage}
+          className="px-4 py-2 text-sm border border-gray-300 rounded hover:border-gray-100 btn"
+        >
+          Reset
+        </button>
+
+        <button
+          disabled={!hasProcessedImage}
+          onClick={downloadImage}
+          className="px-4 py-2 text-sm border border-gray-300 rounded hover:border-gray-100 btn"
+        >
+          Download
+        </button>
+
+        <button
+          onClick={onToggleGPU}
+          disabled={processing || !gpuSupported}
+          className={`px-4 py-2 text-sm rounded border btn ${
+            !gpuSupported
+              ? "opacity-40 cursor-not-allowed border-gray-300"
+              : useGPU
+              ? "border-green-500 text-green-500 hover:bg-green-500/10"
+              : "border-gray-300 text-gray-400 hover:border-gray-100"
+          }`}
+        >
+          {useGPU ? "GPU" : "CPU"}
+        </button>
+      </div>
     </div>
   );
 };

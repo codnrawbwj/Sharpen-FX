@@ -3,11 +3,13 @@ import { useEffect, useRef, useState } from "react";
 const ImageSlider = ({
   hasImage,
   canvasRef,
-  processedCanvasRef,
+  afterCanvasRef,
+  hiddenCanvasRef,
 }: {
   hasImage: boolean;
   canvasRef: React.RefObject<HTMLCanvasElement | null>;
-  processedCanvasRef: React.RefObject<HTMLCanvasElement | null>;
+  afterCanvasRef: React.RefObject<HTMLCanvasElement | null>;
+  hiddenCanvasRef: React.RefObject<HTMLCanvasElement | null>;
 }) => {
   const [sliderPosition, setSliderPosition] = useState<number>(0.5);
   const [isDragging, setIsDragging] = useState<boolean>(false);
@@ -72,10 +74,8 @@ const ImageSlider = ({
     setSliderPosition(position);
   };
 
-  if (!hasImage) return null;
-
   return (
-    <div className="w-full">
+    <div className={`w-full ${!hasImage ? "hidden" : ""}`}>
       <h3 className="text-sm font-medium text-gray-100 mb-2 text-center">
         Before / After Comparison
       </h3>
@@ -97,11 +97,14 @@ const ImageSlider = ({
           }}
         >
           <canvas
-            ref={processedCanvasRef}
+            ref={afterCanvasRef}
             className="w-full h-full object-contain"
             style={{ maxWidth: "100%", height: "auto", display: "block" }}
           />
         </div>
+
+        {/* Always in the DOM so the inactive pipeline's ref remains valid */}
+        <canvas ref={hiddenCanvasRef} className="hidden" />
 
         <div
           className="absolute top-0 bottom-0 w-1 bg-white shadow-lg cursor-ew-resize"
