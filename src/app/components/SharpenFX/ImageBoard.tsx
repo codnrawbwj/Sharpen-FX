@@ -8,11 +8,10 @@ import { useWebGLProcessor } from "@/app/hooks/useWebGLProcessor";
 import { ImageSize } from "@/app/types/types";
 import { ERROR_MESSAGES, IMAGE_CONSTRAINTS } from "@/app/utils/constants";
 import { handleError } from "@/app/utils/errorHandler";
-import { resizeImage } from "@/app/utils/imageUtils";
+import { downloadCanvas, resizeImage } from "@/app/utils/imageUtils";
 import { useCallback, useEffect, useRef, useState } from "react";
 
 const ImageBoard = () => {
-  // Input ref
   const inputRef = useRef<HTMLInputElement>(null);
 
   // Three canvas refs:
@@ -33,6 +32,7 @@ const ImageBoard = () => {
   const [strength, setStrength] = useState<number>(1.0);
   const [useGPU, setUseGPU] = useState<boolean>(true);
   const [gpuError, setGpuError] = useState<string | null>(null);
+  const [hasCPUProcessed, setHasCPUProcessed] = useState<boolean>(false);
 
   // --- CPU Worker ---
   const handleWorkerProcessed = useCallback((imageData: ImageData) => {
@@ -50,6 +50,7 @@ const ImageBoard = () => {
         imageData.height
       );
       ctx.putImageData(id, 0, 0);
+      setHasCPUProcessed(true);
     }
   }, []);
 
@@ -86,6 +87,7 @@ const ImageBoard = () => {
         setImageUrl(null);
       }
       if (currentImg) {
+        currentImg.onerror = null;
         currentImg.src = "";
         setCurrentImg(null);
       }
@@ -102,6 +104,7 @@ const ImageBoard = () => {
 
       cleanupPrevImage();
       setStrength(1.0);
+      setHasCPUProcessed(false);
 
       const img = new Image();
 
@@ -146,10 +149,42 @@ const ImageBoard = () => {
     }
   };
 
+  const handleReset = () => {
+    cleanupPrevImage();
+    setHasImage(false);
+    setImgSize({ w: 0, h: 0 });
+    setStrength(1.0);
+    setHasCPUProcessed(false);
+
+    if (inputRef.current) inputRef.current.value = "";
+
+    const canvas = canvasRef.current;
+    if (canvas) {
+      const ctx = canvas.getContext("2d");
+      ctx?.clearRect(0, 0, canvas.width, canvas.height);
+    }
+
+    const processedCanvas = processedCanvasRef.current;
+    if (processedCanvas) {
+      const ctx = processedCanvas.getContext("2d");
+      ctx?.clearRect(0, 0, processedCanvas.width, processedCanvas.height);
+    }
+  };
+
+  const handleDownload = () => {
+    const canvas = useGPU ? webglCanvasRef.current : processedCanvasRef.current;
+    if (!canvas) return;
+    try {
+      downloadCanvas(canvas, `sharpened-FX-${Date.now()}.png`);
+    } catch (error) {
+      handleError(error as Error, "download");
+    }
+  };
+
   const handleToggleGPU = () => {
     setStrength(1.0);
+    setHasCPUProcessed(false);
 
-    // Clear the CPU processed canvas when switching to GPU
     const processedCanvas = processedCanvasRef.current;
     if (processedCanvas) {
       const ctx = processedCanvas.getContext("2d");
@@ -178,7 +213,6 @@ const ImageBoard = () => {
       const ctx = canvas.getContext("2d");
       if (ctx) ctx.drawImage(currentImg, 0, 0, imgSize.w, imgSize.h);
 
-      // Size the WebGL canvas to match
       const webglCanvas = webglCanvasRef.current;
       if (webglCanvas) {
         webglCanvas.width = imgSize.w;
@@ -187,38 +221,56 @@ const ImageBoard = () => {
     }
   }, [hasImage, currentImg, imgSize.w, imgSize.h]);
 
+  const isProcessed = useGPU ? isReady : hasCPUProcessed;
+
   return (
-    <div className="flex-1 flex flex-col items-center justify-center min-h-[300px]">
-      {gpuError && (
-        <div className="w-full mb-2 px-4 py-2 text-sm text-yellow-800 bg-yellow-100 border border-yellow-300 rounded">
-          {gpuError}
+    <div className="flex h-screen w-full overflow-hidden">
+      {/* Left: Image viewer */}
+      <div className="flex-1 relative bg-[#0a0a0a]">
+
+        {/* GPU error banner */}
+        {gpuError && (
+          <div className="absolute top-4 left-4 right-4 z-10 px-4 py-2 text-xs text-yellow-300 bg-yellow-950/60 border border-yellow-700/40 rounded-lg backdrop-blur-sm">
+            {gpuError}
+          </div>
+        )}
+
+        {/* ImageSlider is always in the DOM so canvas refs are valid on mount.
+            It positions itself to fill the area when hasImage, hidden otherwise. */}
+        <ImageSlider
+          hasImage={hasImage}
+          canvasRef={canvasRef}
+          afterCanvasRef={useGPU ? webglCanvasRef : processedCanvasRef}
+          hiddenCanvasRef={useGPU ? processedCanvasRef : webglCanvasRef}
+        />
+
+        {/* File upload — centered overlay when no image */}
+        {!hasImage && (
+          <div className="absolute inset-0 flex items-center justify-center p-12">
+            <FileUpload handleFiles={handleFiles} inputRef={inputRef} />
+          </div>
+        )}
+      </div>
+
+      {/* Right: Control panel */}
+      <aside className="w-72 shrink-0 h-full flex flex-col border-l border-white/10 bg-gray-900/60 backdrop-blur-md">
+        {/* Branding */}
+        <div className="px-6 pt-6 pb-5 border-b border-white/10">
+          <h1 className="text-lg font-semibold tracking-tight text-white">
+            Sharpen<span className="text-primary-a">FX</span>
+          </h1>
+          <p className="text-xs text-gray-500 mt-0.5">Image Enhancement</p>
         </div>
-      )}
 
-      {/* ImageSlider is always rendered so its canvas refs are valid on mount.
-          It hides itself via CSS when hasImage is false. WebGL needs the canvas
-          to exist in the DOM before it can initialize a context. */}
-      <ImageSlider
-        hasImage={hasImage}
-        canvasRef={canvasRef}
-        afterCanvasRef={useGPU ? webglCanvasRef : processedCanvasRef}
-        hiddenCanvasRef={useGPU ? processedCanvasRef : webglCanvasRef}
-      />
-
-      {!hasImage ? (
-        <FileUpload handleFiles={handleFiles} inputRef={inputRef} />
-      ) : (
-        <div className="w-full flex flex-col items-center gap-4">
+        {/* Controls */}
+        <div className="flex-1 overflow-y-auto px-6 py-5">
           <ImageContorlPanel
+            hasImage={hasImage}
             processing={processing}
-            hasProcessedImage={!!processedCanvasRef.current}
+            isProcessed={isProcessed}
             onProcess={processImage}
-            cleanupPrevImage={cleanupPrevImage}
-            setHasImage={setHasImage}
-            setImgSize={setImgSize}
-            inputRef={inputRef}
-            canvasRef={canvasRef}
-            processedCanvasRef={processedCanvasRef}
+            onReset={handleReset}
+            onDownload={handleDownload}
             strength={strength}
             onStrengthChange={setStrength}
             useGPU={useGPU}
@@ -226,7 +278,7 @@ const ImageBoard = () => {
             gpuSupported={isSupported}
           />
         </div>
-      )}
+      </aside>
     </div>
   );
 };
