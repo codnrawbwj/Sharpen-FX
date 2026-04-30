@@ -34,8 +34,7 @@ const FileUpload = ({ handleFiles, inputRef }: FileUploadProps) => {
       <div className="flex flex-col items-center gap-2" onClick={handleClick}>
         <p className="text-gray-700">Drag & Drop or click to select an image</p>
         <p className="text-xs text-gray-400">
-          Supports JPG / PNG. Large images scaled to width 1200px for
-          performance.
+          Supports JPG / PNG. Images wider than {IMAGE_CONSTRAINTS.MAX_WIDTH}px will be scaled down.
         </p>
       </div>
     </div>

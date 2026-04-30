@@ -1,5 +1,5 @@
 export const IMAGE_CONSTRAINTS = {
-  MAX_WIDTH: 1200,
+  MAX_WIDTH: 1920,
   SUPPORTED_FORMATS: [".jpg", ".jpeg", ".png"],
 } as const;
 
